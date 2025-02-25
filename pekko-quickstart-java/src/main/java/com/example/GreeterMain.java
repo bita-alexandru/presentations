@@ -1,0 +1,51 @@
+package com.example;
+
+import org.apache.pekko.actor.typed.ActorRef;
+import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.PostStop;
+import org.apache.pekko.actor.typed.javadsl.*;
+
+public class GreeterMain extends AbstractBehavior<GreeterMain.SayHello> {
+
+    public static class SayHello {
+        public final String name;
+
+        public SayHello(String name) {
+            this.name = name;
+        }
+    }
+
+    private final ActorRef<Greeter.Greet> greeter;
+
+    public static Behavior<SayHello> create() {
+        return Behaviors.setup(GreeterMain::new);
+    }
+
+    private GreeterMain(ActorContext<SayHello> context) {
+        super(context);
+        //#create-actors
+        greeter = context.spawn(Greeter.create(), "greeter");
+        //#create-actors
+    }
+
+    @Override
+    public Receive<SayHello> createReceive() {
+        return newReceiveBuilder()
+                .onSignal(PostStop.class, signal -> onPostStop())
+                .onMessage(SayHello.class, this::onSayHello).build();
+    }
+
+    private Behavior<GreeterMain.SayHello> onPostStop() {
+        getContext().getLog().info("Adios muchachos");
+        return this;
+    }
+
+    private Behavior<SayHello> onSayHello(SayHello command) {
+        //#create-actors
+        ActorRef<Greeter.Greeted> replyTo =
+                getContext().spawn(GreeterBot.create(3), command.name);
+        greeter.tell(new Greeter.Greet(command.name, replyTo));
+        //#create-actors
+        return this;
+    }
+}
