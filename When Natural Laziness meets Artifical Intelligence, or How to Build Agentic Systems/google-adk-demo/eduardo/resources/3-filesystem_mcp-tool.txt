@@ -1,0 +1,21 @@
+from google.adk.tools.mcp_tool import McpToolset
+from mcp import StdioServerParameters
+
+root_agent = Agent(
+    model='gemini-2.5-flash-lite-preview-09-2025',
+    name='root_agent',
+    description='A helpful assistant for user questions.',
+    instruction='Help user accessing their file systems',
+    tools=[
+        McpToolset(
+            connection_params=StdioServerParameters(
+                command='npx',
+                args=[
+                    '-y',  # Arguments for the command
+                    '@modelcontextprotocol/server-filesystem',
+                    './',
+                ],
+            ),
+        )
+    ],
+)
